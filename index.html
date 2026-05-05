@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>MOMA · Estoque Carandaí</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.2);
+    --text: #111111;
+    --muted: #666666;
+    --hint: #999999;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --amber: #d97706;
+    --amber-bg: #fef3c7;
+    --red: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #242422;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f0efea;
+      --muted: #a0a09a;
+      --hint: #666660;
+      --green: #4ade80;
+      --green-bg: #14532d55;
+      --amber: #fbbf24;
+      --amber-bg: #78350f55;
+      --red: #f87171;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app { max-width: 440px; margin: 0 auto; padding-bottom: 80px; }
+
+  /* Header */
+  .header { background: #0f0f0d; color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 20; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: 4px; color: #fff; }
+  .event-info { font-size: 10px; color: #888; letter-spacing: 1px; margin-top: 3px; text-transform: uppercase; }
+  .live { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #4ade80; font-weight: 500; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* Tabs */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 57px; z-index: 19; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 1; padding: 11px 8px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); white-space: nowrap; letter-spacing: 0.3px; transition: color .15s; user-select: none; }
+  .tab.active { border-bottom-color: #0f0f0d; color: var(--text); }
+  @media (prefers-color-scheme: dark) { .tab.active { border-bottom-color: #fff; } }
+
+  /* Section */
+  .section { padding: 12px 14px; display: none; }
+  .section.active { display: block; }
+
+  /* Search */
+  .search-wrap { margin-bottom: 12px; }
+  .search-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: 10px; font-size: 14px; background: var(--surface); color: var(--text); outline: none; -webkit-appearance: none; }
+  .search-input:focus { border-color: #0f0f0d; }
+  @media (prefers-color-scheme: dark) { .search-input:focus { border-color: #fff; } }
+
+  /* SKU Card */
+  .sku-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+  .sku-header { padding: 12px 14px 8px; }
+  .sku-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .sku-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .sizes-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px; }
+
+  /* Size Buttons */
+  .sz { border: 1px solid var(--border-strong); border-radius: 8px; padding: 7px 10px; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 46px; background: var(--surface); cursor: pointer; transition: transform .12s, background .12s; -webkit-tap-highlight-color: transparent; }
+  .sz:active { transform: scale(0.93); }
+  .sz.zero { opacity: .4; cursor: default; border-style: dashed; }
+  .sz.low { border-color: var(--amber); }
+  .sz.good { border-color: var(--green); }
+  .sz-label { font-weight: 700; font-size: 12px; }
+  .sz-qty { font-size: 10px; color: var(--muted); }
+  .sz.low .sz-qty { color: var(--amber); }
+  .sz.good .sz-qty { color: var(--green); }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 50; display: none; align-items: flex-end; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 18px 18px 0 0; padding: 22px 20px 40px; width: 100%; }
+  .modal-name { font-size: 15px; font-weight: 700; }
+  .modal-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .modal-stock { text-align: center; font-size: 36px; font-weight: 800; margin: 16px 0 0; }
+  .modal-stock-label { text-align: center; font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+  .qty-row { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 10px 0 18px; }
+  .qty-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-strong); background: transparent; font-size: 22px; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; transition: background .1s; }
+  .qty-btn:active { background: var(--bg); }
+  .qty-num { font-size: 32px; font-weight: 800; min-width: 48px; text-align: center; }
+  .qty-hint { text-align: center; font-size: 11px; color: var(--hint); margin-bottom: 16px; }
+  .modal-btns { display: flex; gap: 10px; }
+  .btn-cancel { padding: 14px 18px; border: 1px solid var(--border-strong); background: transparent; border-radius: 10px; font-size: 15px; cursor: pointer; color: var(--text); }
+  .btn-confirm { flex: 1; padding: 14px; background: #0f0f0d; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: .5px; }
+  .btn-confirm:active { opacity: .85; }
+
+  /* Summary */
+  .stat-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .stat-card { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+  .stat-val { font-size: 22px; font-weight: 800; margin-top: 4px; }
+  .prod-sum { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .prod-sum-name { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .sum-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 4px 0; border-top: 1px solid var(--border); }
+  .sum-lbl { color: var(--muted); }
+  .sold-badge { background: var(--green-bg); color: var(--green); border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 600; }
+
+  /* Log */
+  .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-name { font-size: 12px; font-weight: 600; }
+  .log-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .log-minus { color: var(--red); font-weight: 700; font-size: 13px; }
+
+  /* Reset */
+  .reset-btn { width: 100%; padding: 11px; border: 1px solid var(--red); background: transparent; color: var(--red); border-radius: 10px; font-size: 12px; cursor: pointer; margin-top: 16px; font-weight: 600; }
+  .empty { text-align: center; padding: 50px 20px; color: var(--hint); font-size: 13px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #0f0f0d; color: #fff; padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 600; opacity: 0; transition: all .25s; z-index: 99; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="logo">MOMA</div>
+        <div class="event-info">Carandaí · Jockey · Mai 2025</div>
+      </div>
+      <div class="live"><span class="dot"></span> ao vivo</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(0)">Estoque</div>
+    <div class="tab" onclick="switchTab(1)">Vender</div>
+    <div class="tab" onclick="switchTab(2)">Resumo</div>
+    <div class="tab" onclick="switchTab(3)">Histórico</div>
+  </div>
+
+  <div id="t0" class="section active">
+    <div class="search-wrap"><input class="search-input" id="s0" placeholder="Buscar produto…" oninput="renderEstoque()" /></div>
+    <div id="list-estoque"></div>
+  </div>
+
+  <div id="t1" class="section">
+    <div class="search-wrap"><input class="search-input" id="s1" placeholder="Buscar produto…" oninput="renderVender()" /></div>
+    <div id="list-vender"></div>
+  </div>
+
+  <div id="t2" class="section"><div id="resumo"></div></div>
+  <div id="t3" class="section"><div id="log"></div></div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-name" id="m-name"></div>
+    <div class="modal-sub" id="m-sub"></div>
+    <div class="modal-stock" id="m-stock"></div>
+    <div class="modal-stock-label">unidades em estoque</div>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="chQty(-1)">−</button>
+      <div class="qty-num" id="m-qty">1</div>
+      <button class="qty-btn" onclick="chQty(+1)">+</button>
+    </div>
+    <div class="qty-hint">quantidade a dar baixa</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmSell()">✓ Confirmar venda</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATALOG = [
+  { id:'pele-vm',    nome:'T-shirt PELE – verde militar',          preco:180, sizes:{P:0,M:5,G:2,GG:6,XG:6} },
+  { id:'altinha-am', nome:'T-shirt ALTINHA Rio – azul marinho',     preco:180, sizes:{P:1,M:1,G:1,GG:4,XG:1} },
+  { id:'boxe-ow',    nome:'T-shirt BOXE SALVADOR – off white',      preco:180, sizes:{P:4,M:2,G:4,GG:4} },
+  { id:'14bis',      nome:'Heavy 14BIS Santo Dumont – boxy branca', preco:210, sizes:{P:3,M:6,G:8,GG:10} },
+  { id:'berm-azul',  nome:'Bermuda Azul Alfaiataria',               preco:290, sizes:{P:3,M:7,G:8,GG:6} },
+  { id:'berm-caqui', nome:'Bermuda Caqui Alfaiataria',              preco:290, sizes:{P:3,M:4,G:5,GG:5} },
+  { id:'tote',       nome:'Tote Bag MOMA',                          preco:450, sizes:{'ÚNICO':12} },
+  { id:'lebron-ow',  nome:'T-shirt LEBRON – off white',             preco:180, sizes:{P:3,M:5,G:0,GG:3} },
+  { id:'kobe-ow',    nome:'T-shirt KOBE BRANCA – off white',        preco:180, sizes:{P:2,M:1,G:3} },
+  { id:'bone-cam',   nome:'Boné Camurça Caramelo',                  preco:180, sizes:{'ÚNICO':8} },
+  { id:'carmen',     nome:'Heavy T-shirt CARMEN MIRANDA – off-white',preco:210, sizes:{P:6,M:8,G:6,GG:3} },
+  { id:'copa',       nome:'T-shirt COPA – Brazilian Football',       preco:180, sizes:{P:6,M:8,G:10,GG:5} },
+  { id:'bone-preto', nome:'Boné Coteléê Preto 5 Panel',             preco:160, sizes:{'ÚNICO':10} },
+  { id:'bone-verde', nome:'Boné Coteléê Verde 5 Panel',             preco:160, sizes:{'ÚNICO':10} },
+  { id:'barbearia',  nome:'Boné Barbearia – six panel',             preco:150, sizes:{'ÚNICO':7} },
+];
+
+let stock = {}, saleLog = [], sel = null, selQty = 1;
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('moma_carandai_v3') || '{}');
+    stock = d.stock || {};
+    saleLog = d.log || [];
+  } catch(e) {}
+  CATALOG.forEach(p => {
+    if (!stock[p.id]) {
+      stock[p.id] = {};
+      Object.entries(p.sizes).forEach(([sz,q]) => stock[p.id][sz] = q);
+    }
+  });
+  save();
+}
+
+function save() {
+  localStorage.setItem('moma_carandai_v3', JSON.stringify({ stock, log: saleLog }));
+}
+
+function totalStock(id) { return Object.values(stock[id]||{}).reduce((a,b)=>a+b,0); }
+function totalSold(id) {
+  const p = CATALOG.find(x=>x.id===id);
+  if (!p) return 0;
+  return Object.entries(p.sizes).reduce((acc,[sz,orig])=>acc+(orig-(stock[id]?.[sz]??0)),0);
+}
+function totalRev() { return CATALOG.reduce((acc,p)=>acc+totalSold(p.id)*p.preco,0); }
+function totalUnits() { return CATALOG.reduce((acc,p)=>acc+totalSold(p.id),0); }
+
+function szClass(q) { return q===0?'zero':q<=2?'low':'good'; }
+
+function szBtn(sz, q, clickable, prodId) {
+  const cls = szClass(q);
+  const onclick = clickable && q > 0 ? `openModal('${prodId}','${sz}')` : '';
+  return `<div class="sz ${cls}" ${onclick?`onclick="${onclick}"`:''}><span class="sz-label">${sz}</span><span class="sz-qty">${q} un</span></div>`;
+}
+
+function filtered(searchId) {
+  const q = (document.getElementById(searchId)?.value || '').toLowerCase();
+  return CATALOG.filter(p => p.nome.toLowerCase().includes(q));
+}
+
+function renderEstoque() {
+  const list = document.getElementById('list-estoque');
+  const prods = filtered('s0');
+  if (!prods.length) { list.innerHTML = '<div class="empty">Nenhum produto encontrado</div>'; return; }
+  list.innerHTML = prods.map(p => {
+    const tot = totalStock(p.id);
+    return `<div class="sku-card">
+      <div class="sku-header"><div class="sku-name">${p.nome}</div><div class="sku-meta">R$ ${p.preco} &middot; ${tot} un. disponíveis</div></div>
+      <div class="sizes-grid">${Object.entries(stock[p.id]||{}).map(([sz,q])=>szBtn(sz,q,false,p.id)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderVender() {
+  const list = document.getElementById('list-vender');
+  const prods = filtered('s1');
+  if (!prods.length) { list.innerHTML = '<div class="empty">Nenhum produto encontrado</div>'; return; }
+  list.innerHTML = prods.map(p => {
+    return `<div class="sku-card">
+      <div class="sku-header"><div class="sku-name">${p.nome}</div><div class="sku-meta">R$ ${p.preco} &middot; toque no tamanho para dar baixa</div></div>
+      <div class="sizes-grid">${Object.entries(stock[p.id]||{}).map(([sz,q])=>szBtn(sz,q,true,p.id)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderResumo() {
+  const el = document.getElementById('resumo');
+  const rev = totalRev().toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+  const units = totalUnits();
+  const prods = CATALOG.filter(p => totalSold(p.id) > 0);
+  el.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-label">Total faturado</div><div class="stat-val">${rev}</div></div>
+      <div class="stat-card"><div class="stat-label">Peças vendidas</div><div class="stat-val">${units}</div></div>
+    </div>
+    ${prods.map(p => {
+      const lines = Object.entries(stock[p.id]||{}).map(([sz,q]) => {
+        const orig = p.sizes[sz]||0;
+        const sold = orig - q;
+        if (!sold) return '';
+        return `<div class="sum-row"><span class="sum-lbl">Tam. ${sz}</span><span>${sold} vendida${sold>1?'s':''} <span class="sold-badge">+R$ ${(sold*p.preco).toLocaleString('pt-BR')}</span></span></div>`;
+      }).join('');
+      return `<div class="prod-sum"><div class="prod-sum-name">${p.nome}</div>${lines}</div>`;
+    }).join('')}
+    <button class="reset-btn" onclick="doReset()">↺ Resetar estoque ao inicial</button>`;
+}
+
+function renderLog() {
+  const el = document.getElementById('log');
+  if (!saleLog.length) { el.innerHTML = '<div class="empty">Nenhuma venda registrada ainda</div>'; return; }
+  el.innerHTML = [...saleLog].reverse().map(l =>
+    `<div class="log-item">
+      <div><div class="log-name">${l.nome} · Tam. ${l.size}</div><div class="log-detail">${l.time} &middot; ${l.qty} un. &middot; R$ ${(l.qty*l.preco).toLocaleString('pt-BR')}</div></div>
+      <div class="log-minus">−${l.qty}</div>
+    </div>`).join('');
+}
+
+function switchTab(i) {
+  document.querySelectorAll('.tab').forEach((t,j) => t.classList.toggle('active', j===i));
+  document.querySelectorAll('.section').forEach((s,j) => s.classList.toggle('active', j===i));
+  if (i===0) renderEstoque();
+  if (i===1) renderVender();
+  if (i===2) renderResumo();
+  if (i===3) renderLog();
+}
+
+function openModal(prodId, sz) {
+  const p = CATALOG.find(x=>x.id===prodId);
+  if (!p) return;
+  sel = { prodId, sz, p };
+  selQty = 1;
+  const q = stock[prodId]?.[sz] ?? 0;
+  document.getElementById('m-name').textContent = p.nome;
+  document.getElementById('m-sub').textContent = `Tamanho ${sz} · R$ ${p.preco}`;
+  document.getElementById('m-stock').textContent = q;
+  document.getElementById('m-qty').textContent = selQty;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function overlayClick(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); sel = null; }
+
+function chQty(d) {
+  if (!sel) return;
+  const max = stock[sel.prodId]?.[sel.sz] ?? 0;
+  selQty = Math.max(1, Math.min(max, selQty + d));
+  document.getElementById('m-qty').textContent = selQty;
+}
+
+function confirmSell() {
+  if (!sel) return;
+  const { prodId, sz, p } = sel;
+  if ((stock[prodId]?.[sz] ?? 0) < selQty) { showToast('Estoque insuficiente!'); return; }
+  stock[prodId][sz] -= selQty;
+  const now = new Date();
+  const time = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  saleLog.push({ prodId, sz, qty: selQty, preco: p.preco, nome: p.nome, time });
+  save();
+  closeModal();
+  showToast(`✓ ${selQty}× ${p.nome.split(' ')[2]||p.nome.split(' ')[1]} vendida${selQty>1?'s':''}`);
+  renderVender();
+}
+
+function doReset() {
+  if (!confirm('Resetar todo o estoque para os valores iniciais? Isso apaga o histórico de vendas.')) return;
+  stock = {}; saleLog = [];
+  CATALOG.forEach(p => {
+    stock[p.id] = {};
+    Object.entries(p.sizes).forEach(([sz,q]) => stock[p.id][sz] = q);
+  });
+  save();
+  renderEstoque();
+  showToast('Estoque resetado!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+load();
+renderEstoque();
+</script>
+</body>
+</html>
